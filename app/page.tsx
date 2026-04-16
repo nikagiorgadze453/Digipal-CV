@@ -70,12 +70,40 @@ export default function Home() {
     }
   };
 
-  const handleDownload = () => {
-    if (fileId) window.open(`/api/download?id=${fileId}&template=${template}`, "_blank");
+  const handleDownload = async () => {
+    if (!cvData) return;
+    try {
+      const res = await fetch(`/api/download?template=${template}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cvData, template }),
+      });
+      if (!res.ok) { const e = await res.json(); alert(e.detail || "Download failed"); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url;
+      const cd = res.headers.get("content-disposition") || "";
+      const fn = cd.match(/filename="([^"]+)"/)?.[1] || "CV.pdf";
+      a.download = fn; a.click(); URL.revokeObjectURL(url);
+    } catch { alert("Download failed"); }
   };
 
-  const handleDownloadDocx = () => {
-    if (fileId) window.open(`/api/download-docx?id=${fileId}&template=${template}`, "_blank");
+  const handleDownloadDocx = async () => {
+    if (!cvData) return;
+    try {
+      const res = await fetch(`/api/download-docx?template=${template}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cvData, template }),
+      });
+      if (!res.ok) { const e = await res.json(); alert(e.detail || "Download failed"); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url;
+      const cd = res.headers.get("content-disposition") || "";
+      const fn = cd.match(/filename="([^"]+)"/)?.[1] || "CV.docx";
+      a.download = fn; a.click(); URL.revokeObjectURL(url);
+    } catch { alert("Download failed"); }
   };
 
   const handleCvUpdate = (newCv: CvData, html: string) => {
@@ -230,6 +258,8 @@ export default function Home() {
               {showChat && (
                 <DigipAIChat
                   fileId={fileId}
+                  cvData={cvData!}
+                  template={template}
                   onUpdate={handleCvUpdate}
                   onClose={() => setShowChat(false)}
                 />

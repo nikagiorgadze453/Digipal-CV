@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { CvData } from "@/lib/types";
+import { CvData, TemplateType } from "@/lib/types";
 import { readApiErrorDetail } from "@/lib/api-error";
 
 interface Props {
   fileId: string;
+  cvData: CvData;
+  template: TemplateType;
   onUpdate: (cv: CvData, html: string) => void;
   onClose: () => void;
 }
@@ -21,7 +23,7 @@ interface Message {
 const WELCOME_HTML =
   `Hi! I'm <strong>Digip-AI</strong>. Tell me what you'd like to change in the CV. For example:<br><em>"Change the title to Senior Data Engineer"</em><br><em>"Add Python to programming languages"</em><br><em>"Make the summary shorter"</em>`;
 
-export default function DigipAIChat({ fileId, onUpdate, onClose }: Props) {
+export default function DigipAIChat({ fileId, cvData, template, onUpdate, onClose }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     { text: WELCOME_HTML, isUser: false, trustedHtml: true },
   ]);
@@ -43,6 +45,8 @@ export default function DigipAIChat({ fileId, onUpdate, onClose }: Props) {
     const fd = new FormData();
     fd.append("file_id", fileId);
     fd.append("message", msg);
+    fd.append("cv_data", JSON.stringify(cvData));
+    fd.append("template", template);
 
     try {
       const res = await fetch("/api/chat", { method: "POST", body: fd });

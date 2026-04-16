@@ -399,18 +399,33 @@ function generateFpPdf(cv: CvData): Promise<Buffer> {
 }
 
 export async function GET(req: NextRequest) {
+  return handleDownload(req, null);
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
+  return handleDownload(req, body);
+}
+
+async function handleDownload(req: NextRequest, body: { cvData?: CvData; template?: TemplateType } | null) {
   try {
     const fileId = req.nextUrl.searchParams.get("id");
-    if (!fileId) {
-      return NextResponse.json({ detail: "Missing file ID" }, { status: 400 });
+    const template: TemplateType =
+      (body?.template as TemplateType) ||
+      (req.nextUrl.searchParams.get("template") as TemplateType) ||
+      (fileId ? getTemplate(fileId) : "digipal");
+
+    let raw: CvData | undefined;
+    if (body?.cvData) {
+      raw = body.cvData;
+    } else if (fileId) {
+      raw = getCvData(fileId) ?? undefined;
     }
 
-    const raw = getCvData(fileId);
     if (!raw) {
       return NextResponse.json({ detail: "CV not found" }, { status: 404 });
     }
 
-    const template: TemplateType = (req.nextUrl.searchParams.get("template") as TemplateType) || getTemplate(fileId);
     const cvData = coerceCvData(raw);
     const pdfBuffer = template === "fp" ? await generateFpPdf(cvData) : await generatePdf(cvData);
     const name = safeDownloadBasename(cvData.name);
