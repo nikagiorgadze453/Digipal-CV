@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       file_id: fileId,
       filename: file.name,
-      extracted_text: text.slice(0, 2000),
+      extracted_text: text.slice(0, 2000),   // preview only
+      extracted_text_full: text,              // full text for format step
       text_length: text.length,
     });
   } catch (e: unknown) {

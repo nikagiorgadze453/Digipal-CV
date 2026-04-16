@@ -26,15 +26,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const entry = getUpload(fileId);
-    if (!entry) {
-      return NextResponse.json(
-        { detail: "Uploaded file not found" },
-        { status: 404 }
-      );
+    // Accept raw text directly (for serverless environments where upload/format
+    // may run on different instances with no shared memory)
+    const rawText = formData.get("raw_text") as string | null;
+
+    let textToFormat: string;
+    if (rawText?.trim()) {
+      textToFormat = rawText;
+    } else {
+      const entry = getUpload(fileId);
+      if (!entry) {
+        return NextResponse.json(
+          { detail: "Uploaded file not found. Please try again." },
+          { status: 404 }
+        );
+      }
+      textToFormat = entry.text;
     }
 
-    const cvData = await formatCvWithAI(entry.text, apiKey);
+    const cvData = await formatCvWithAI(textToFormat, apiKey);
     storeCvData(fileId, cvData);
     storeTemplate(fileId, template);
     const previewHtml = renderPreviewHtmlForTemplate(cvData, template);

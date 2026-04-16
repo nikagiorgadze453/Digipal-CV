@@ -54,6 +54,9 @@ export default function Home() {
       const fmtForm = new FormData();
       fmtForm.append("file_id", upData.file_id);
       fmtForm.append("template", template);
+      // Pass extracted text directly so format works even if upload/format
+      // land on different serverless instances (no shared memory)
+      fmtForm.append("raw_text", upData.extracted_text_full ?? upData.extracted_text ?? "");
       const fmtRes = await fetch("/api/format", { method: "POST", body: fmtForm });
       if (!fmtRes.ok) throw new Error(await readApiErrorDetail(fmtRes));
       const fmtData = await fmtRes.json();
