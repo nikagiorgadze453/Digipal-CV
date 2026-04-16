@@ -6,14 +6,17 @@ import { applyTheme, getStoredTheme } from "@/lib/theme";
 
 export default function ThemeSettings() {
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState<AppTheme>("light");
+  const [current, setCurrent] = useState<AppTheme>(() => {
+    // Initialize from storage — runs once on mount, no effect needed
+    const stored = getStoredTheme();
+    return stored ?? "light";
+  });
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const stored = getStoredTheme();
-    const initial: AppTheme = stored ?? "light";
-    applyTheme(initial);
-    setCurrent(initial);
+    // Apply the theme to the DOM on mount (external system update, not setState)
+    applyTheme(current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

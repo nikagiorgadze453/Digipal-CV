@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storeCvData, getTemplate } from "@/lib/storage";
+import { storeCvData } from "@/lib/storage";
 import { renderPreviewHtmlForTemplate } from "@/lib/render-preview";
 import { coerceCvData } from "@/lib/cv-guards";
 import { TemplateType } from "@/lib/types";
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: "cv_data is not valid JSON" }, { status: 400 });
     }
 
-    const template = ((formData.get("template") as string) || getTemplate(fileId)) as TemplateType;
+    const template = ((formData.get("template") as string) || "digipal") as TemplateType;
     const data = coerceCvData(raw);
     storeCvData(fileId, data);
     const previewHtml = renderPreviewHtmlForTemplate(data, template);

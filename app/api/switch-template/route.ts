@@ -1,27 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCvData, storeTemplate } from "@/lib/storage";
 import { renderPreviewHtmlForTemplate } from "@/lib/render-preview";
-import { TemplateType } from "@/lib/types";
+import { CvData, TemplateType } from "@/lib/types";
+import { coerceCvData } from "@/lib/cv-guards";
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const fileId = formData.get("file_id") as string | null;
     const template = (formData.get("template") as string) as TemplateType;
+    const cvDataStr = formData.get("cv_data") as string | null;
 
-    if (!fileId?.trim()) {
-      return NextResponse.json({ detail: "Missing file_id" }, { status: 400 });
-    }
     if (template !== "digipal" && template !== "fp") {
       return NextResponse.json({ detail: "Invalid template" }, { status: 400 });
     }
 
-    const cvData = getCvData(fileId);
-    if (!cvData) {
+    // Use passed cv_data first, fall back to in-memory (local dev)
+    let raw: CvData | undefined;
+    if (cvDataStr) {
+      try { raw = JSON.parse(cvDataStr); } catch { /* ignore */ }
+    }
+    if (!raw && fileId) {
+      raw = getCvData(fileId) ?? undefined;
+    }
+    if (!raw) {
       return NextResponse.json({ detail: "CV data not found" }, { status: 404 });
     }
 
-    storeTemplate(fileId, template);
+    if (fileId) storeTemplate(fileId, template);
+    const cvData = coerceCvData(raw);
     const previewHtml = renderPreviewHtmlForTemplate(cvData, template);
 
     return NextResponse.json({ preview_html: previewHtml, template });

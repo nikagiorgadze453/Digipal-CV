@@ -28,7 +28,6 @@ import {
   WidthType,
   BorderStyle,
   AlignmentType,
-  HeadingLevel,
   Footer,
 } from "docx";
 

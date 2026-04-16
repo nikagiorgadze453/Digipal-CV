@@ -121,6 +121,7 @@ export default function Home() {
       const form = new FormData();
       form.append("file_id", fileId);
       form.append("template", newTemplate);
+      form.append("cv_data", JSON.stringify(cvData));
       const res = await fetch("/api/switch-template", { method: "POST", body: form });
       if (!res.ok) throw new Error(await readApiErrorDetail(res));
       const data = await res.json();
