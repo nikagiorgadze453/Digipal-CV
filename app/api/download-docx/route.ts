@@ -2,16 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCvData, getTemplate } from "@/lib/storage";
 import { CvData, TemplateType } from "@/lib/types";
 import { coerceCvData } from "@/lib/cv-guards";
+import fs from "fs";
+import path from "path";
 
 function safeDownloadBasename(name: string): string {
   const s = name.replace(/[^\w\s-]+/g, "").replace(/\s+/g, "_").slice(0, 80);
   return s || "CV";
 }
+
+function readLogoBuffer(filename: string): Buffer | null {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), "public", filename));
+  } catch { return null; }
+}
+
 import {
   Document,
   Packer,
   Paragraph,
   TextRun,
+  ImageRun,
   Table,
   TableRow,
   TableCell,
@@ -211,6 +221,23 @@ function generateDocx(cv: CvData): Promise<Buffer> {
       })
   );
 
+  const digipalLogo = readLogoBuffer("digipal-logo.png");
+
+  // Logo paragraph (top-right via a right-aligned paragraph)
+  const logoParagraph = digipalLogo
+    ? new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 200 },
+        children: [
+          new ImageRun({
+            data: digipalLogo,
+            transformation: { width: 60, height: 60 },
+            type: "png",
+          }),
+        ],
+      })
+    : new Paragraph({ children: [] });
+
   // --- Assemble document ---
   const doc = new Document({
     sections: [
@@ -221,46 +248,32 @@ function generateDocx(cv: CvData): Promise<Buffer> {
           },
         },
         children: [
+          logoParagraph,
           // Name
           new Paragraph({
+            spacing: { before: 0, after: 60 },
             children: [
-              new TextRun({
-                text: cv.name,
-                bold: true,
-                size: 24,
-                color: NAVY,
-                font: "Poppins",
-              }),
+              new TextRun({ text: cv.name, bold: true, size: 28, color: NAVY, font: "Poppins" }),
             ],
           }),
           // Title
           new Paragraph({
-            spacing: { after: 100 },
+            spacing: { after: 160 },
             children: [
-              new TextRun({
-                text: cv.title,
-                size: 24,
-                color: NAVY,
-                font: "Poppins",
-              }),
+              new TextRun({ text: cv.title, size: 24, color: NAVY, font: "Poppins" }),
             ],
           }),
           // Profile Summary
           new Paragraph({
             alignment: AlignmentType.JUSTIFIED,
-            spacing: { after: 80 },
+            spacing: { after: 120 },
             children: [
-              new TextRun({
-                text: cv.profile_summary,
-                size: 20,
-                color: BLACK,
-                font: "Poppins",
-              }),
+              new TextRun({ text: cv.profile_summary, size: 20, color: BLACK, font: "Poppins" }),
             ],
           }),
           // Domain Experience
           new Paragraph({
-            spacing: { after: 150 },
+            spacing: { after: 200 },
             children: [
               new TextRun({ text: "Domain Experience: ", bold: true, size: 20, font: "Poppins", color: BLACK }),
               new TextRun({ text: cv.domain_experience, size: 20, font: "Poppins", color: BLACK }),
@@ -268,6 +281,7 @@ function generateDocx(cv: CvData): Promise<Buffer> {
           }),
           // Professional Skills
           sectionTitle("Professional Skills"),
+          new Paragraph({ spacing: { after: 80 }, children: [] }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: skillRows,
@@ -473,6 +487,21 @@ function generateFpDocx(cv: CvData): Promise<Buffer> {
   });
 
   const footerBorder = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" };
+  const fpLogo = readLogoBuffer("fp-logo-full.png");
+
+  // FP logo paragraph — the logo is 1000x242px, display at ~250x60pt
+  const fpLogoParagraph = fpLogo
+    ? new Paragraph({
+        spacing: { after: 280 },
+        children: [
+          new ImageRun({
+            data: fpLogo,
+            transformation: { width: 220, height: 53 },
+            type: "png",
+          }),
+        ],
+      })
+    : new Paragraph({ children: [] });
 
   const doc = new Document({
     sections: [
@@ -511,6 +540,7 @@ function generateFpDocx(cv: CvData): Promise<Buffer> {
           }),
         },
         children: [
+          fpLogoParagraph,
           new Paragraph({
             spacing: { after: 60 },
             children: [
